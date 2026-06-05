@@ -1,4 +1,5 @@
 """FastAPI app — OCR KTP (Event BTS)."""
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -19,12 +20,14 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # PENTING: jangan biarkan koneksi DB memblokir startup (healthcheck Railway).
+    # Beri timeout ketat; kalau DB belum siap, app tetap up & /health tetap jalan.
     try:
-        await init_db()
+        await asyncio.wait_for(init_db(), timeout=10)
         logger.info("DB siap (tabel ter-init).")
-    except Exception as exc:  # noqa: BLE001
+    except (Exception, asyncio.TimeoutError) as exc:  # noqa: BLE001
         # Prototype: jangan crash kalau DB belum siap; OCR tetap jalan.
-        logger.error("Gagal init DB: %s", exc)
+        logger.error("Init DB dilewati (app tetap jalan): %s", exc)
     if not settings.bedrock_configured:
         logger.warning("AWS credentials BELUM di-set — endpoint OCR akan menolak request.")
     yield

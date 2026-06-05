@@ -16,6 +16,9 @@ engine = create_async_engine(
     settings.database_url,
     echo=False,
     pool_pre_ping=True,
+    # asyncpg: gagal-cepat (5s) kalau host DB tak terjangkau, supaya startup
+    # tidak menggantung dan healthcheck Railway tetap lolos.
+    connect_args={"timeout": 5},
 )
 
 SessionLocal = async_sessionmaker(
