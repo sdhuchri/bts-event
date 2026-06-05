@@ -29,6 +29,8 @@ services:
       - "3002:3002"
     depends_on:
       - backend
+    # Lokal: paksa mode dev (hot reload). Image default-nya production (next start).
+    command: ["npm", "run", "dev"]
     volumes:
       - ./frontend:/app
       - /app/node_modules

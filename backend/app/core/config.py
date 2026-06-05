@@ -1,6 +1,7 @@
 """Konfigurasi aplikasi dari environment variables."""
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,6 +28,24 @@ class Settings(BaseSettings):
 
     # CORS
     cors_origins: str = "http://localhost:3002,http://127.0.0.1:3002"
+
+    @field_validator("database_url")
+    @classmethod
+    def _normalize_db_url(cls, v: str) -> str:
+        """Railway/Heroku memberi `postgres://` atau `postgresql://`.
+        SQLAlchemy async butuh driver `postgresql+asyncpg://`."""
+        if v.startswith("postgres://"):
+            v = "postgresql://" + v[len("postgres://") :]
+        if v.startswith("postgresql://"):
+            v = "postgresql+asyncpg://" + v[len("postgresql://") :]
+        # asyncpg tidak paham query param libpq seperti ?sslmode=...
+        if "+asyncpg" in v and "sslmode=" in v:
+            from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
+
+            parts = urlsplit(v)
+            q = [(k, val) for k, val in parse_qsl(parts.query) if k != "sslmode"]
+            v = urlunsplit(parts._replace(query=urlencode(q)))
+        return v
 
     @property
     def cors_origins_list(self) -> list[str]:
