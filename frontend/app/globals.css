@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Hindari zoom otomatis di iOS saat fokus input (font < 16px). */
+input,
+select,
+textarea {
+  font-size: 16px;
+}

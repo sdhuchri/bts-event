@@ -1,0 +1,35 @@
+name: bts-event
+
+services:
+  backend:
+    build: ./backend
+    container_name: bts-backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    ports:
+      - "8000:8000"
+    # Postgres berjalan di host (container nalarx-dashboard, published :5432).
+    # host.docker.internal -> host gateway (juga jalan di Linux via host-gateway).
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      # Hot reload kode backend tanpa rebuild.
+      - ./backend/app:/app/app
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  frontend:
+    build: ./frontend
+    container_name: bts-frontend
+    restart: unless-stopped
+    environment:
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+      - WATCHPACK_POLLING=true
+    ports:
+      - "3002:3002"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
