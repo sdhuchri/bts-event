@@ -3,6 +3,7 @@ import io
 import json
 import logging
 import re
+from functools import lru_cache
 
 import boto3
 from botocore.config import Config
@@ -116,7 +117,11 @@ def _parse_response(text: str) -> OcrResult:
     )
 
 
+@lru_cache(maxsize=1)
 def _bedrock_client():
+    # Tanpa argumen -> client dibuat SEKALI lalu dipakai ulang (boto3 client
+    # thread-safe, aman di-share antar request OCR yang jalan paralel di
+    # threadpool). Hemat CPU saat ramai; tak ada state per-request di sini.
     cfg = Config(
         region_name=settings.aws_region,
         retries={"max_attempts": 2, "mode": "standard"},
