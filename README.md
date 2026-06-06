@@ -171,12 +171,19 @@ Frontend ─► FastAPI (OTP: generate/verif, Postgres) ─► wa-gateway (Baile
 > ⚠️ **Baileys = WhatsApp Web tidak resmi** → melanggar ToS, **risiko nomor diban**.
 > Hanya untuk DEMO/prototype, jangan untuk produksi/skala besar.
 
+### Multi-nomor pengirim (failover + load-spread)
+`wa-gateway` mendukung **beberapa nomor pengirim** via env `WA_SESSIONS`
+(mis. `WA_SESSIONS=wa1,wa2,wa3`). Saat kirim OTP, gateway memilih nomor yang
+**connected** secara **round-robin** dan **failover** ke nomor lain bila gagal.
+Menyebar beban ini juga menurunkan risiko ke-flag/ban per nomor.
+
 ### Tautkan WhatsApp (scan QR) — lokal
 1. `docker compose up --build`
-2. Buka **http://localhost:8090/qr?key=bts-wa-secret-key**
-3. Di HP: WhatsApp → **Perangkat Tertaut** → **Tautkan Perangkat** → scan QR.
-4. Setelah `connected`, OTP siap dikirim. Sesi disimpan di volume `wa_auth`
-   (tak perlu scan ulang tiap restart).
+2. Buka **http://localhost:8090/qr?key=bts-wa-secret-key** → tampil **daftar nomor**
+   (`wa1`, `wa2`, …) dengan status & link **Scan** per nomor.
+3. Di HP: WhatsApp → **Perangkat Tertaut** → **Tautkan Perangkat** → scan QR tiap nomor.
+4. Tiap sesi tersimpan di volume `wa_auth` (subfolder per nomor) → tak perlu scan
+   ulang tiap restart. Cukup minimal 1 nomor connected agar OTP bisa terkirim.
 
 Alur user: isi No HP → **Kirim OTP** → terima kode di WA → **Verifikasi** → **Simpan**.
 
@@ -189,7 +196,8 @@ simpan record bila nomor belum punya OTP terverifikasi.
 - **Wajib pasang Volume** di mount path `/app/auth` (Settings → Volumes) agar sesi
   WhatsApp persisten — tanpa ini, QR harus di-scan ulang tiap redeploy.
 - Variables wa-gateway: `WA_API_KEY=<secret>`, `WA_AUTH_DIR=/app/auth`, `PORT=3000`
-  (port tetap agar private networking deterministik).
+  (port tetap agar private networking deterministik), dan `WA_SESSIONS=wa1,wa2,...`
+  (daftar nomor pengirim).
 - Backend Variables: `WA_GATEWAY_URL=http://${{wa-gateway.RAILWAY_PRIVATE_DOMAIN}}:3000`
   & `WA_GATEWAY_API_KEY=<secret sama dgn WA_API_KEY>`, lalu redeploy backend.
 - Scan QR: generate domain (publik) sementara untuk `wa-gateway`, buka

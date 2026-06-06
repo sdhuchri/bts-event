@@ -28,6 +28,8 @@ services:
       - PORT=3000
       - WA_API_KEY=bts-wa-secret-key
       - WA_AUTH_DIR=/app/auth
+      # Daftar nomor pengirim (round-robin + failover). Tambah/kurang sesuai kebutuhan.
+      - WA_SESSIONS=wa1,wa2
     ports:
       # Buka http://localhost:8090/qr?key=bts-wa-secret-key untuk scan WhatsApp.
       - "8090:3000"

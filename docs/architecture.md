@@ -15,7 +15,7 @@ Overview of components, flow, and processing order. Diagrams use **Mermaid**
 | **frontend** | Next.js 16 | Staff app: camera/scan KTP + form (NIK, Name, Phone), send OTP |
 | **backend** | FastAPI | System core: OCR, OTP logic, persistence, **+ public API `/api/v1/ext`** |
 | **AWS Bedrock** | Vision LLM | OCR: KTP photo → structured JSON (17 fields) |
-| **wa service** | Node + Baileys | WhatsApp message sender (companion device) |
+| **wa service** | Node + Baileys | WhatsApp message sender. **Multi-number pool** (`WA_SESSIONS`) with round-robin + failover when a number is down/restricted |
 | **customer WhatsApp** | WhatsApp | The customer's WhatsApp that receives the OTP |
 | **db** | PostgreSQL | `ktp_records` (participant data) + `otp_codes` (OTP codes) |
 | **bsya (mobile app)** | Native mobile | External consumer: verify & resend OTP via the public API |
