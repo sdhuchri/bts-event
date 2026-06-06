@@ -12,6 +12,11 @@ const fmt = (n: number | null | undefined) =>
 const fmtCost = (n: number | null, cur: string) =>
   n === null || n === undefined ? "—" : `${cur === "USD" ? "$" : cur + " "}${n.toFixed(4)}`;
 
+const fmtIdr = (n: number | null | undefined) =>
+  n === null || n === undefined
+    ? "—"
+    : `Rp ${Math.round(n).toLocaleString("id-ID")}`;
+
 const fmtTime = (iso: string) => {
   const d = new Date(iso);
   return d.toLocaleString("id-ID", {
@@ -96,8 +101,12 @@ export default function UsagePage() {
         />
         <Card
           label="Total biaya"
-          value={fmtCost(summary?.cost_usd ?? null, cur)}
-          sub={summary?.cost_usd == null ? "harga belum di-set" : cur}
+          value={fmtIdr(summary?.cost_idr)}
+          sub={
+            summary?.cost_usd == null
+              ? "harga belum di-set"
+              : `${fmtCost(summary.cost_usd, cur)} · kurs Rp ${(summary?.usd_to_idr ?? 0).toLocaleString("id-ID")}`
+          }
         />
       </div>
 
@@ -110,7 +119,7 @@ export default function UsagePage() {
         </div>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <table className="w-full min-w-[760px] text-left text-sm">
+          <table className="w-full min-w-[880px] text-left text-sm">
             <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
                 <Th>Waktu</Th>
@@ -120,7 +129,8 @@ export default function UsagePage() {
                 <Th right>Out</Th>
                 <Th right>Total</Th>
                 <Th right>Latency</Th>
-                <Th right>Biaya</Th>
+                <Th right>Biaya (Rp)</Th>
+                <Th right>Biaya ($)</Th>
                 <Th>Status</Th>
               </tr>
             </thead>
@@ -138,7 +148,8 @@ export default function UsagePage() {
                   <Td right className="tabular-nums text-slate-700">
                     {r.latency_ms != null ? `${fmt(r.latency_ms)} ms` : "—"}
                   </Td>
-                  <Td right className="tabular-nums text-slate-700">{fmtCost(r.cost_usd, cur)}</Td>
+                  <Td right className="tabular-nums font-medium text-slate-800">{fmtIdr(r.cost_idr)}</Td>
+                  <Td right className="tabular-nums text-slate-500">{fmtCost(r.cost_usd, cur)}</Td>
                   <Td>
                     {r.success ? (
                       <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
@@ -163,7 +174,9 @@ export default function UsagePage() {
       <p className="mt-4 text-xs text-slate-400">
         Biaya dihitung dari token × harga di config backend
         (<code>LLM_PRICE_INPUT_PER_1K</code> &amp; <code>LLM_PRICE_OUTPUT_PER_1K</code>).
-        Jika kosong, kolom biaya tampil &quot;—&quot;.
+        Rupiah memakai kurs <code>USD_TO_IDR</code>
+        {summary?.usd_to_idr ? ` (Rp ${summary.usd_to_idr.toLocaleString("id-ID")}/USD)` : ""}.
+        Jika harga kosong, kolom biaya tampil &quot;—&quot;.
       </p>
     </main>
   );

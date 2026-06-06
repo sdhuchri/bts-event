@@ -66,6 +66,7 @@ export interface LlmUsageItem {
   confidence: Confidence | null;
   image_bytes: number | null;
   cost_usd: number | null;
+  cost_idr: number | null;
 }
 
 export interface LlmUsageSummary {
@@ -77,7 +78,9 @@ export interface LlmUsageSummary {
   total_tokens: number;
   avg_latency_ms: number | null;
   cost_usd: number | null;
+  cost_idr: number | null;
   currency: string;
+  usd_to_idr: number;
 }
 
 export interface LlmUsageResponse {

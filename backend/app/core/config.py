@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     llm_price_input_per_1k: float = 0.00072
     llm_price_output_per_1k: float = 0.0036
     llm_currency: str = "USD"
+    # Kurs USD -> IDR untuk menampilkan biaya dalam Rupiah. Default ~6 Jun 2026
+    # (~Rp 18.089/USD). Override via env USD_TO_IDR sesuai kurs terkini.
+    usd_to_idr: float = 18089.0
 
     # Database
     database_url: str = (

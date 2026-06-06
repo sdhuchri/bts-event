@@ -27,6 +27,13 @@ def cost_usd(input_tokens: int | None, output_tokens: int | None) -> float | Non
     return round(cin + cout, 6)
 
 
+def cost_idr(usd: float | None) -> float | None:
+    """Konversi biaya USD -> Rupiah dengan kurs di config."""
+    if usd is None:
+        return None
+    return round(usd * settings.usd_to_idr, 2)
+
+
 async def record_usage(
     db: AsyncSession,
     *,
@@ -68,6 +75,7 @@ async def record_usage(
 
 
 def _to_dict(r: LlmUsage) -> dict:
+    usd = cost_usd(r.input_tokens, r.output_tokens)
     return {
         "id": r.id,
         "created_at": r.created_at,
@@ -82,7 +90,8 @@ def _to_dict(r: LlmUsage) -> dict:
         "error_code": r.error_code,
         "confidence": r.confidence,
         "image_bytes": r.image_bytes,
-        "cost_usd": cost_usd(r.input_tokens, r.output_tokens),
+        "cost_usd": usd,
+        "cost_idr": cost_idr(usd),
     }
 
 
@@ -110,6 +119,7 @@ async def summary(db: AsyncSession) -> dict:
         )
     ).one()
     total_calls, ok_calls, in_tok, out_tok, tot_tok, avg_lat = row
+    usd = cost_usd(int(in_tok or 0), int(out_tok or 0))
     return {
         "total_calls": int(total_calls or 0),
         "success_calls": int(ok_calls or 0),
@@ -118,6 +128,8 @@ async def summary(db: AsyncSession) -> dict:
         "output_tokens": int(out_tok or 0),
         "total_tokens": int(tot_tok or 0),
         "avg_latency_ms": round(float(avg_lat), 1) if avg_lat is not None else None,
-        "cost_usd": cost_usd(int(in_tok or 0), int(out_tok or 0)),
+        "cost_usd": usd,
+        "cost_idr": cost_idr(usd),
         "currency": settings.llm_currency,
+        "usd_to_idr": settings.usd_to_idr,
     }
