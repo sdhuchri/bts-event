@@ -122,15 +122,15 @@ export default function UsagePage() {
           <table className="w-full min-w-[880px] text-left text-sm">
             <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
-                <Th>Waktu</Th>
-                <Th>Operasi</Th>
+                <Th>Time</Th>
+                <Th>Operation</Th>
                 <Th>Model</Th>
                 <Th right>In</Th>
                 <Th right>Out</Th>
                 <Th right>Total</Th>
                 <Th right>Latency</Th>
-                <Th right>Biaya (Rp)</Th>
-                <Th right>Biaya ($)</Th>
+                <Th right>Cost (Rp)</Th>
+                <Th right>Cost ($)</Th>
                 <Th>Status</Th>
               </tr>
             </thead>
