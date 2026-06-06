@@ -6,7 +6,6 @@ import CameraCapture from "@/components/CameraCapture";
 import ImagePreview from "@/components/ImagePreview";
 import KtpForm, { type KtpSubmit } from "@/components/KtpForm";
 import LiveCamera from "@/components/LiveCamera";
-import ScanningOverlay from "@/components/ScanningOverlay";
 import Toast, { type ToastState } from "@/components/Toast";
 import { ApiError, ocrKtp, saveRecord } from "@/lib/api";
 import type { Confidence, KtpData } from "@/lib/types";
@@ -31,33 +30,6 @@ export default function HomePage() {
     };
   }, [previewUrl]);
 
-  const reset = useCallback(() => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setFile(null);
-    setPreviewUrl("");
-    setOcr(null);
-    setStage("capture");
-  }, [previewUrl]);
-
-  const runOcr = useCallback(async (f: File) => {
-    setLoading(true);
-    try {
-      const res = await ocrKtp(f);
-      setOcr({ data: res.data, confidence: res.confidence });
-      setStage("result");
-    } catch (err) {
-      const msg =
-        err instanceof ApiError
-          ? err.message
-          : "Gagal terhubung ke server OCR.";
-      setToast({ kind: "error", message: msg });
-      setStage("preview"); // biar bisa diperiksa & diproses ulang / ambil ulang
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Upload dari galeri → tampilkan preview untuk dikonfirmasi dulu.
   const selectFile = useCallback(
     (f: File) => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -68,21 +40,31 @@ export default function HomePage() {
     [previewUrl]
   );
 
-  // Hasil kamera (auto/manual) → langsung OCR dengan animasi scanning.
-  const captureFromCamera = useCallback(
-    (f: File) => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-      setFile(f);
-      setPreviewUrl(URL.createObjectURL(f));
-      setStage("preview");
-      runOcr(f);
-    },
-    [previewUrl, runOcr]
-  );
+  const reset = useCallback(() => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setFile(null);
+    setPreviewUrl("");
+    setOcr(null);
+    setStage("capture");
+  }, [previewUrl]);
 
-  const process = useCallback(() => {
-    if (file) runOcr(file);
-  }, [file, runOcr]);
+  const process = useCallback(async () => {
+    if (!file) return;
+    setLoading(true);
+    try {
+      const res = await ocrKtp(file);
+      setOcr({ data: res.data, confidence: res.confidence });
+      setStage("result");
+    } catch (err) {
+      const msg =
+        err instanceof ApiError
+          ? err.message
+          : "Gagal terhubung ke server OCR.";
+      setToast({ kind: "error", message: msg });
+    } finally {
+      setLoading(false);
+    }
+  }, [file]);
 
   const save = useCallback(
     async (data: KtpSubmit) => {
@@ -137,14 +119,8 @@ export default function HomePage() {
       )}
 
       {stage === "camera" && (
-        <LiveCamera
-          onCapture={captureFromCamera}
-          onCancel={() => setStage("capture")}
-        />
+        <LiveCamera onCapture={selectFile} onCancel={() => setStage("capture")} />
       )}
-
-      {/* Animasi "membaca KTP" saat OCR berjalan (kamera & upload). */}
-      {loading && previewUrl && <ScanningOverlay src={previewUrl} />}
 
       {stage === "preview" && previewUrl && (
         <section className="flex flex-1 flex-col">
