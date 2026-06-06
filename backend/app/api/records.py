@@ -5,11 +5,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core import errors
 from app.db.database import get_db
 from app.db.models import KtpRecord
 from app.schemas.ktp import KTP_FIELDS, RecordCreate, RecordOut, RecordUpdate
-from app.services.otp import has_verified_otp, normalize_phone
+from app.services.otp import normalize_phone
 
 logger = logging.getLogger("bts.api")
 router = APIRouter(prefix="/api/v1/records", tags=["records"])
@@ -28,19 +27,12 @@ async def create_record(
 ) -> KtpRecord:
     """Simpan hasil OCR yang sudah dikoreksi user.
 
-    Wajib: nomor HP sudah diverifikasi via OTP WhatsApp.
+    Catatan: app ini hanya GENERATE/kirim OTP. Verifikasi OTP dilakukan di
+    aplikasi terpisah, jadi simpan tidak diblokir oleh status verifikasi.
     """
     data = payload.model_dump()
-    no_hp = data.get("no_hp")
-    if no_hp:
-        no_hp = normalize_phone(no_hp)
-        data["no_hp"] = no_hp
-        if not await has_verified_otp(db, no_hp):
-            raise errors.OcrError(
-                "OTP_REQUIRED",
-                "Nomor HP belum diverifikasi via OTP.",
-                status_code=400,
-            )
+    if data.get("no_hp"):
+        data["no_hp"] = normalize_phone(data["no_hp"])
     obj = KtpRecord(**data)
     db.add(obj)
     await db.commit()

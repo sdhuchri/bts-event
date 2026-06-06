@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ApiError, requestOtp, verifyOtp } from "@/lib/api";
+import { ApiError, requestOtp } from "@/lib/api";
 import type { Confidence, KtpData } from "@/lib/types";
 
 const CONFIDENCE_STYLE: Record<Confidence, string> = {
@@ -55,12 +55,9 @@ export default function KtpForm({
   const [phone, setPhone] = useState("");
   const [touched, setTouched] = useState(false);
 
-  // OTP
+  // OTP (generate/kirim saja — verifikasi di aplikasi lain)
   const [otpSent, setOtpSent] = useState(false);
-  const [verified, setVerified] = useState(false);
-  const [code, setCode] = useState("");
   const [sendingOtp, setSendingOtp] = useState(false);
-  const [verifying, setVerifying] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [otpMsg, setOtpMsg] = useState<{ kind: "err" | "ok"; text: string } | null>(
     null
@@ -75,14 +72,6 @@ export default function KtpForm({
     return () => clearInterval(t);
   }, [cooldown]);
 
-  const resetOtp = () => {
-    setOtpSent(false);
-    setVerified(false);
-    setCode("");
-    setCooldown(0);
-    setOtpMsg(null);
-  };
-
   const sendOtp = async () => {
     setTouched(true);
     if (!phoneValid || sendingOtp || cooldown > 0) return;
@@ -92,7 +81,7 @@ export default function KtpForm({
       await requestOtp(fullPhone);
       setOtpSent(true);
       setCooldown(RESEND_COOLDOWN);
-      setOtpMsg({ kind: "ok", text: "Kode OTP dikirim ke WhatsApp kamu." });
+      setOtpMsg({ kind: "ok", text: "Kode OTP dikirim ke WhatsApp." });
     } catch (err) {
       setOtpMsg({
         kind: "err",
@@ -103,28 +92,16 @@ export default function KtpForm({
     }
   };
 
-  const doVerify = async () => {
-    if (code.length < 4 || verifying) return;
-    setVerifying(true);
+  const changeNumber = () => {
+    setOtpSent(false);
+    setCooldown(0);
     setOtpMsg(null);
-    try {
-      await verifyOtp(fullPhone, code);
-      setVerified(true);
-      setOtpMsg({ kind: "ok", text: "Nomor terverifikasi ✓" });
-    } catch (err) {
-      setOtpMsg({
-        kind: "err",
-        text: err instanceof ApiError ? err.message : "Verifikasi gagal.",
-      });
-    } finally {
-      setVerifying(false);
-    }
   };
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setTouched(true);
-    if (!verified) return;
+    if (!otpSent) return;
     onSave({ nik: nik.trim() || null, nama: nama.trim() || null, no_hp: fullPhone });
   };
 
@@ -147,7 +124,7 @@ export default function KtpForm({
       </span>
 
       <p className="text-sm text-slate-500">
-        Periksa &amp; koreksi data, lalu verifikasi nomor HP.
+        Periksa &amp; koreksi data, lalu kirim OTP ke nomor WhatsApp.
       </p>
 
       {/* NIK */}
@@ -219,9 +196,8 @@ export default function KtpForm({
           ) : (
             <button
               type="button"
-              onClick={resetOtp}
-              disabled={verified}
-              className="min-h-[48px] whitespace-nowrap rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-700 disabled:opacity-50"
+              onClick={changeNumber}
+              className="min-h-[48px] whitespace-nowrap rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-700"
             >
               Ubah
             </button>
@@ -234,48 +210,25 @@ export default function KtpForm({
         )}
       </div>
 
-      {/* OTP input — muncul setelah kode dikirim */}
-      {otpSent && !verified && (
+      {/* Setelah OTP dikirim: status + tombol kirim ulang (verifikasi di app lain) */}
+      {otpSent && (
         <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <label htmlFor="otp" className="text-sm font-medium text-slate-700">
-            Masukkan kode OTP dari WhatsApp
-          </label>
-          <div className="flex gap-2">
-            <input
-              id="otp"
-              type="text"
-              inputMode="numeric"
-              value={code}
-              onChange={(e) =>
-                setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
-              }
-              placeholder="6 digit"
-              className="min-h-[48px] flex-1 rounded-xl border border-slate-300 bg-white px-3 text-center text-lg tracking-[0.3em] outline-none focus:border-slate-900"
-            />
-            <button
-              type="button"
-              onClick={doVerify}
-              disabled={code.length < 4 || verifying}
-              className="min-h-[48px] rounded-xl bg-slate-900 px-5 text-sm font-semibold text-white transition active:scale-[0.99] disabled:opacity-50"
-            >
-              {verifying ? "Cek…" : "Verifikasi"}
-            </button>
-          </div>
+          <p className="text-sm text-slate-700">
+            OTP dikirim ke WhatsApp <b>{fullPhone}</b>. Verifikasi dilakukan di
+            aplikasi terpisah.
+          </p>
           <button
             type="button"
             onClick={sendOtp}
             disabled={cooldown > 0 || sendingOtp}
-            className="w-fit text-xs font-medium text-emerald-700 disabled:text-slate-400"
+            className="min-h-[44px] w-fit rounded-xl border border-emerald-600 px-4 text-sm font-semibold text-emerald-700 transition active:scale-[0.99] disabled:border-slate-300 disabled:text-slate-400"
           >
-            {cooldown > 0 ? `Kirim ulang dalam ${cooldown}s` : "Kirim ulang kode"}
+            {sendingOtp
+              ? "Mengirim…"
+              : cooldown > 0
+                ? `Kirim ulang OTP (${cooldown}s)`
+                : "Kirim ulang OTP"}
           </button>
-        </div>
-      )}
-
-      {/* Status verifikasi */}
-      {verified && (
-        <div className="flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
-          <span>✓</span> Nomor {fullPhone} terverifikasi
         </div>
       )}
 
@@ -290,9 +243,9 @@ export default function KtpForm({
       {/* Sticky action bar */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
         <div className="mx-auto flex max-w-md flex-col gap-1">
-          {!verified && (
+          {!otpSent && (
             <p className="text-center text-xs text-slate-500">
-              Verifikasi nomor HP via OTP untuk menyimpan.
+              Kirim OTP dulu sebelum menyimpan.
             </p>
           )}
           <div className="flex gap-3">
@@ -306,7 +259,7 @@ export default function KtpForm({
             </button>
             <button
               type="submit"
-              disabled={saving || !verified}
+              disabled={saving || !otpSent}
               className="min-h-[52px] flex-[2] rounded-xl bg-slate-900 px-4 text-base font-semibold text-white transition active:scale-[0.99] disabled:opacity-50"
             >
               {saving ? "Menyimpan…" : "Simpan Data"}
