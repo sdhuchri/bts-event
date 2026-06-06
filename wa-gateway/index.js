@@ -177,31 +177,31 @@ app.get("/sessions", (req, res) => {
   res.json(SESSION_IDS.map((id) => ({ id, connected: !!sessions.get(id)?.connected })));
 });
 
-// ── UI (dark, aksen WhatsApp) ───────────────────────────────────────
+// ── UI (light — samakan dgn page OCR KTP) ───────────────────────────
 const WA_ICON =
-  "<svg width='20' height='20' viewBox='0 0 24 24' fill='#04200f'><path d='M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.5A10 10 0 1 0 12 2zm0 18a8 8 0 0 1-4.1-1.1l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 1 1 12 20zm4.4-5.6c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.5.1l-.7.9c-.1.1-.3.2-.5.1a6.5 6.5 0 0 1-3.2-2.8c-.2-.4.2-.4.5-1.1.1-.2 0-.3 0-.5l-.7-1.7c-.2-.4-.4-.4-.5-.4h-.5c-.2 0-.4.1-.6.3-.8.8-.8 2 0 3.2a9 9 0 0 0 3.6 3.2c1.3.6 1.9.6 2.6.5.4 0 1.3-.5 1.5-1 .2-.5.2-.9.1-1z'/></svg>";
+  "<svg width='20' height='20' viewBox='0 0 24 24' fill='#ffffff'><path d='M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.5A10 10 0 1 0 12 2zm0 18a8 8 0 0 1-4.1-1.1l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 1 1 12 20zm4.4-5.6c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.5.1l-.7.9c-.1.1-.3.2-.5.1a6.5 6.5 0 0 1-3.2-2.8c-.2-.4.2-.4.5-1.1.1-.2 0-.3 0-.5l-.7-1.7c-.2-.4-.4-.4-.5-.4h-.5c-.2 0-.4.1-.6.3-.8.8-.8 2 0 3.2a9 9 0 0 0 3.6 3.2c1.3.6 1.9.6 2.6.5.4 0 1.3-.5 1.5-1 .2-.5.2-.9.1-1z'/></svg>";
 
 const CSS =
   "*{box-sizing:border-box}" +
-  "body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#0f172a;color:#e2e8f0}" +
-  ".wrap{max-width:520px;margin:0 auto;padding:32px 18px 48px}" +
-  ".brand{display:flex;align-items:center;gap:11px;margin-bottom:22px}" +
-  ".logo{width:36px;height:36px;border-radius:10px;background:#25d366;display:grid;place-items:center}" +
-  "h1{font-size:19px;margin:0;font-weight:700}h2{font-size:18px;margin:6px 0}" +
-  ".sub{color:#94a3b8;font-size:13px;margin:2px 0 0}" +
-  ".card{background:#1e293b;border:1px solid #334155;border-radius:14px;padding:13px 15px;margin-bottom:11px;display:flex;align-items:center;gap:11px;flex-wrap:wrap}" +
-  ".name{font-weight:700;font-size:15px;min-width:42px}" +
+  "body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f1f5f9;color:#0f172a;-webkit-font-smoothing:antialiased}" +
+  ".wrap{max-width:448px;margin:0 auto;padding:24px 16px 48px}" +
+  ".brand{display:flex;align-items:center;gap:11px;margin-bottom:20px}" +
+  ".logo{width:36px;height:36px;border-radius:10px;background:#059669;display:grid;place-items:center}" +
+  "h1{font-size:20px;margin:0;font-weight:700;letter-spacing:-.01em}h2{font-size:18px;margin:6px 0;font-weight:700}" +
+  ".sub{color:#64748b;font-size:13px;margin:2px 0 0}" +
+  ".card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:13px 15px;margin-bottom:11px;display:flex;align-items:center;gap:11px;flex-wrap:wrap;box-shadow:0 1px 2px rgba(15,23,42,.04)}" +
+  ".name{font-weight:600;font-size:15px;min-width:42px}" +
   ".pill{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;padding:5px 11px;border-radius:999px}" +
-  ".pill.on{background:rgba(37,211,102,.16);color:#4ade80}.pill.off{background:rgba(148,163,184,.14);color:#94a3b8}" +
-  ".dot{width:8px;height:8px;border-radius:50%}.dot.on{background:#25d366;animation:pulse 1.8s infinite}.dot.off{background:#64748b}" +
-  "@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(37,211,102,.5)}70%{box-shadow:0 0 0 7px rgba(37,211,102,0)}100%{box-shadow:0 0 0 0 rgba(37,211,102,0)}}" +
+  ".pill.on{background:#d1fae5;color:#047857}.pill.off{background:#f1f5f9;color:#64748b}" +
+  ".dot{width:8px;height:8px;border-radius:50%}.dot.on{background:#059669;animation:pulse 1.8s infinite}.dot.off{background:#94a3b8}" +
+  "@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(5,150,105,.5)}70%{box-shadow:0 0 0 7px rgba(5,150,105,0)}100%{box-shadow:0 0 0 0 rgba(5,150,105,0)}}" +
   ".spacer{flex:1 1 auto}" +
-  ".btn{border:0;border-radius:10px;padding:9px 15px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block;font-family:inherit}" +
-  ".btn-scan{background:#25d366;color:#04200f}.btn-scan:hover{background:#22c55e}" +
-  ".btn-reset{background:transparent;border:1px solid #7f1d1d;color:#f87171}.btn-reset:hover{background:rgba(127,29,29,.2)}" +
-  ".center{text-align:center}.qrbox{background:#fff;padding:16px;border-radius:18px;display:inline-block;margin:10px 0 16px}" +
-  ".muted{color:#64748b;font-size:12px;margin-top:20px}.hint{color:#94a3b8;font-size:13.5px;margin:4px 0 0}" +
-  ".back{color:#94a3b8;font-size:13px;text-decoration:none;display:inline-block;margin-bottom:8px}.back:hover{color:#e2e8f0}";
+  ".btn{border:0;border-radius:12px;padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block;font-family:inherit}" +
+  ".btn-scan{background:#0f172a;color:#fff}.btn-scan:hover{background:#1e293b}" +
+  ".btn-reset{background:#fff;border:1px solid #fecaca;color:#dc2626}.btn-reset:hover{background:#fef2f2}" +
+  ".center{text-align:center}.qrbox{background:#fff;border:1px solid #e2e8f0;padding:16px;border-radius:16px;display:inline-block;margin:10px 0 16px;box-shadow:0 1px 2px rgba(15,23,42,.04)}" +
+  ".muted{color:#94a3b8;font-size:12px;margin-top:20px}.hint{color:#64748b;font-size:13.5px;margin:4px 0 0}" +
+  ".back{color:#64748b;font-size:13px;text-decoration:none;display:inline-block;margin-bottom:8px}.back:hover{color:#0f172a}";
 
 function layout(title, inner, refreshMs) {
   return (
