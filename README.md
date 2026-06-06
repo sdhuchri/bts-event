@@ -6,6 +6,8 @@ Web app prototype untuk scan KTP → OCR via **AWS Bedrock** → form koreksi �
 
 ## Arsitektur
 
+> 📐 Diagram lengkap (komponen + sequence, Mermaid): [docs/architecture.md](docs/architecture.md)
+
 ```
 Browser (HP/desktop)
    │  foto / upload KTP
