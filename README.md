@@ -152,6 +152,9 @@ di sub-foldernya (cukup set **Root Directory** di Railway).
 
 ## Verifikasi OTP WhatsApp (Baileys)
 
+> 📄 Opsi & alternatif provider WhatsApp (selain Baileys) + cara menukarnya:
+> [docs/whatsapp-alternatives.md](docs/whatsapp-alternatives.md)
+
 Sebelum menyimpan, nomor HP diverifikasi via **OTP yang dikirim ke WhatsApp**.
 Service `wa-gateway` (Node + [Baileys](https://github.com/WhiskeySockets/Baileys))
 memegang koneksi WhatsApp; FastAPI yang generate/simpan/verifikasi OTP.
