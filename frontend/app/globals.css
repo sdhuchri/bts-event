@@ -15,3 +15,64 @@ select,
 textarea {
   font-size: 16px;
 }
+
+/* ── Efek scanning KTP ─────────────────────────────────────────────── */
+
+/* Garis scan tipis yang menyapu dari atas ke bawah di dalam bingkai. */
+@keyframes ktp-scan {
+  0% {
+    top: 0%;
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+.ktp-scanline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #34d399, transparent);
+  box-shadow: 0 0 14px 2px rgba(52, 211, 153, 0.65);
+  animation: ktp-scan 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Pita gradien lebih tebal untuk overlay "Membaca KTP…". */
+@keyframes ktp-sweep {
+  0% {
+    top: -25%;
+  }
+  100% {
+    top: 100%;
+  }
+}
+
+.ktp-sweep {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 24%;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(16, 185, 129, 0.35),
+    transparent
+  );
+  animation: ktp-sweep 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ktp-scanline,
+  .ktp-sweep {
+    animation: none !important;
+  }
+}
