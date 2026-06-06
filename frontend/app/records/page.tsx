@@ -79,14 +79,7 @@ export default function RecordsPage() {
                     {r.nik || "—"}
                   </p>
                   <p className="mt-1 truncate text-xs text-slate-500">
-                    {[r.tempat_lahir, r.tanggal_lahir]
-                      .filter(Boolean)
-                      .join(", ") || "—"}
-                  </p>
-                  <p className="truncate text-xs text-slate-400">
-                    {[r.kelurahan_desa, r.kecamatan, r.kabupaten_kota]
-                      .filter(Boolean)
-                      .join(" · ")}
+                    📱 {r.no_hp || "—"}
                   </p>
                 </div>
                 <button

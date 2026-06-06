@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import CameraCapture from "@/components/CameraCapture";
 import ImagePreview from "@/components/ImagePreview";
-import KtpForm from "@/components/KtpForm";
+import KtpForm, { type KtpSubmit } from "@/components/KtpForm";
 import LiveCamera from "@/components/LiveCamera";
 import Toast, { type ToastState } from "@/components/Toast";
 import { ApiError, ocrKtp, saveRecord } from "@/lib/api";
@@ -67,11 +67,11 @@ export default function HomePage() {
   }, [file]);
 
   const save = useCallback(
-    async (data: KtpData) => {
+    async (data: KtpSubmit) => {
       setSaving(true);
       try {
         await saveRecord({ ...data, confidence: ocr?.confidence ?? null });
-        setToast({ kind: "success", message: "Data KTP berhasil disimpan." });
+        setToast({ kind: "success", message: "Data berhasil disimpan." });
         reset();
       } catch (err) {
         const msg =
@@ -137,6 +137,7 @@ export default function HomePage() {
         <section className="flex flex-1 flex-col">
           <KtpForm
             initial={ocr.data}
+            previewUrl={previewUrl}
             confidence={ocr.confidence}
             saving={saving}
             onSave={save}

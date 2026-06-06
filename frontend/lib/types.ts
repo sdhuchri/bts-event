@@ -36,8 +36,16 @@ export interface ApiErrorBody {
 
 export interface KtpRecord extends KtpData {
   id: string;
+  no_hp: string | null;
   confidence: Confidence | null;
   raw_text: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface SaveRecordPayload {
+  nik?: string | null;
+  nama?: string | null;
+  no_hp?: string | null;
+  confidence?: Confidence | null;
 }

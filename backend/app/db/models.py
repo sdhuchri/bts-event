@@ -36,6 +36,9 @@ class KtpRecord(Base):
     provinsi: Mapped[str | None] = mapped_column(String(255), nullable=True)
     kabupaten_kota: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
+    # Input manual (bukan dari KTP): nomor HP format +62xxxxxxxx.
+    no_hp: Mapped[str | None] = mapped_column(String(32), nullable=True)
+
     confidence: Mapped[str | None] = mapped_column(String(16), nullable=True)
     raw_text: Mapped[str | None] = mapped_column(Text, nullable=True)
 

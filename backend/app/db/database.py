@@ -36,8 +36,14 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def init_db() -> None:
-    """Buat tabel jika belum ada (cukup untuk prototype, tanpa migrasi)."""
+    """Buat tabel jika belum ada + migrasi ringan (cukup untuk prototype)."""
+    from sqlalchemy import text
+
     from app.db import models  # noqa: F401  pastikan model ter-import
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Migrasi idempotent: tambah kolom no_hp untuk tabel lama yang sudah ada.
+        await conn.execute(
+            text("ALTER TABLE ktp_records ADD COLUMN IF NOT EXISTS no_hp VARCHAR(32)")
+        )

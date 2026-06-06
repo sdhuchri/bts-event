@@ -1,4 +1,9 @@
-import type { ApiErrorBody, KtpData, KtpRecord, OcrSuccess } from "./types";
+import type {
+  ApiErrorBody,
+  KtpRecord,
+  OcrSuccess,
+  SaveRecordPayload,
+} from "./types";
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
@@ -38,9 +43,7 @@ export async function ocrKtp(file: File | Blob): Promise<OcrSuccess> {
 }
 
 /** Simpan hasil OCR yang sudah dikoreksi. */
-export async function saveRecord(
-  data: KtpData & { confidence?: string | null; raw_text?: string | null }
-): Promise<KtpRecord> {
+export async function saveRecord(data: SaveRecordPayload): Promise<KtpRecord> {
   const res = await fetch(`${BASE_URL}/api/v1/records`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

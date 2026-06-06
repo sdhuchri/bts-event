@@ -87,16 +87,19 @@ class OcrBase64Request(BaseModel):
 class RecordCreate(KtpData):
     """Body untuk menyimpan hasil OCR yang sudah dikoreksi user."""
 
+    no_hp: str | None = None
     confidence: Confidence | None = None
     raw_text: str | None = None
 
 
 class RecordUpdate(KtpData):
+    no_hp: str | None = None
     confidence: Confidence | None = None
 
 
 class RecordOut(KtpData):
     id: str
+    no_hp: str | None = None
     confidence: Confidence | None = None
     raw_text: str | None = None
     created_at: datetime

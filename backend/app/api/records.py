@@ -61,8 +61,8 @@ async def update_record(
     obj = await _get_or_404(db, record_id)
     data = payload.model_dump(exclude_unset=True)
     for key, value in data.items():
-        # Hanya field KTP + confidence yang boleh di-update.
-        if key in KTP_FIELDS or key == "confidence":
+        # Hanya field KTP + no_hp + confidence yang boleh di-update.
+        if key in KTP_FIELDS or key in ("no_hp", "confidence"):
             setattr(obj, key, value)
     await db.commit()
     await db.refresh(obj)
