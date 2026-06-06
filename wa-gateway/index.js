@@ -9,6 +9,7 @@
  *   GET  /qr?key=API_KEY    -> halaman QR untuk tautkan perangkat
  *   POST /send  (x-api-key) -> { to, message }  kirim pesan teks
  */
+const fs = require("fs");
 const express = require("express");
 const QRCode = require("qrcode");
 const pino = require("pino");
@@ -28,6 +29,24 @@ const logger = pino({ level: "warn" });
 let sock = null;
 let currentQR = null;
 let connected = false;
+
+/** Hapus credential basi (dipakai saat logout/device_removed) agar bisa scan ulang. */
+async function clearAuth() {
+  try {
+    await fs.promises.rm(AUTH_DIR, { recursive: true, force: true });
+  } catch (e) {
+    console.error("[wa] gagal hapus auth:", e?.message || e);
+  }
+}
+
+/** Tunggu sebentar kalau lagi reconnect, sebelum menyerah. */
+async function waitConnected(ms) {
+  const start = Date.now();
+  while (!connected && Date.now() - start < ms) {
+    await new Promise((r) => setTimeout(r, 300));
+  }
+  return connected;
+}
 
 async function startSock() {
   const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
@@ -49,7 +68,7 @@ async function startSock() {
 
   sock.ev.on("creds.update", saveCreds);
 
-  sock.ev.on("connection.update", (update) => {
+  sock.ev.on("connection.update", async (update) => {
     const { connection, lastDisconnect, qr } = update;
     if (qr) {
       currentQR = qr;
@@ -65,12 +84,18 @@ async function startSock() {
       connected = false;
       const code = lastDisconnect?.error?.output?.statusCode;
       const loggedOut = code === DisconnectReason.loggedOut;
-      console.log(`[wa] koneksi tertutup (code=${code}), reconnect=${!loggedOut}`);
-      if (!loggedOut) {
-        setTimeout(() => startSock().catch((e) => console.error("[wa] reconnect", e)), 2000);
-      } else {
-        console.log("[wa] logged out — hapus folder auth lalu scan ulang");
+      console.log(`[wa] koneksi tertutup (code=${code}), loggedOut=${loggedOut}`);
+      if (loggedOut) {
+        // Session mati permanen (device removed / ban). Bersihkan credential
+        // basi & mulai ulang -> otomatis muncul QR baru untuk scan.
+        console.log("[wa] logout — hapus credential lama & generate QR baru");
+        await clearAuth();
+        currentQR = null;
       }
+      setTimeout(
+        () => startSock().catch((e) => console.error("[wa] reconnect:", e?.message || e)),
+        loggedOut ? 1000 : 2000
+      );
     }
   });
 
@@ -117,6 +142,7 @@ app.post("/send", async (req, res) => {
   if (API_KEY && req.get("x-api-key") !== API_KEY) {
     return res.status(401).json({ success: false, error: "unauthorized" });
   }
+  if (!connected) await waitConnected(5000); // toleransi reconnect sesaat
   if (!connected || !sock) {
     return res.status(503).json({ success: false, error: "wa_not_connected" });
   }
