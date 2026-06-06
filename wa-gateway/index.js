@@ -177,12 +177,61 @@ app.get("/sessions", (req, res) => {
   res.json(SESSION_IDS.map((id) => ({ id, connected: !!sessions.get(id)?.connected })));
 });
 
-function relinkButton(id, key) {
-  const q = `?session=${encodeURIComponent(id)}${key ? `&key=${encodeURIComponent(key)}` : ""}`;
+// ── UI (dark, aksen WhatsApp) ───────────────────────────────────────
+const WA_ICON =
+  "<svg width='20' height='20' viewBox='0 0 24 24' fill='#04200f'><path d='M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.5A10 10 0 1 0 12 2zm0 18a8 8 0 0 1-4.1-1.1l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 1 1 12 20zm4.4-5.6c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.5.1l-.7.9c-.1.1-.3.2-.5.1a6.5 6.5 0 0 1-3.2-2.8c-.2-.4.2-.4.5-1.1.1-.2 0-.3 0-.5l-.7-1.7c-.2-.4-.4-.4-.5-.4h-.5c-.2 0-.4.1-.6.3-.8.8-.8 2 0 3.2a9 9 0 0 0 3.6 3.2c1.3.6 1.9.6 2.6.5.4 0 1.3-.5 1.5-1 .2-.5.2-.9.1-1z'/></svg>";
+
+const CSS =
+  "*{box-sizing:border-box}" +
+  "body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#0f172a;color:#e2e8f0}" +
+  ".wrap{max-width:520px;margin:0 auto;padding:32px 18px 48px}" +
+  ".brand{display:flex;align-items:center;gap:11px;margin-bottom:22px}" +
+  ".logo{width:36px;height:36px;border-radius:10px;background:#25d366;display:grid;place-items:center}" +
+  "h1{font-size:19px;margin:0;font-weight:700}h2{font-size:18px;margin:6px 0}" +
+  ".sub{color:#94a3b8;font-size:13px;margin:2px 0 0}" +
+  ".card{background:#1e293b;border:1px solid #334155;border-radius:14px;padding:13px 15px;margin-bottom:11px;display:flex;align-items:center;gap:11px;flex-wrap:wrap}" +
+  ".name{font-weight:700;font-size:15px;min-width:42px}" +
+  ".pill{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;padding:5px 11px;border-radius:999px}" +
+  ".pill.on{background:rgba(37,211,102,.16);color:#4ade80}.pill.off{background:rgba(148,163,184,.14);color:#94a3b8}" +
+  ".dot{width:8px;height:8px;border-radius:50%}.dot.on{background:#25d366;animation:pulse 1.8s infinite}.dot.off{background:#64748b}" +
+  "@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(37,211,102,.5)}70%{box-shadow:0 0 0 7px rgba(37,211,102,0)}100%{box-shadow:0 0 0 0 rgba(37,211,102,0)}}" +
+  ".spacer{flex:1 1 auto}" +
+  ".btn{border:0;border-radius:10px;padding:9px 15px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block;font-family:inherit}" +
+  ".btn-scan{background:#25d366;color:#04200f}.btn-scan:hover{background:#22c55e}" +
+  ".btn-reset{background:transparent;border:1px solid #7f1d1d;color:#f87171}.btn-reset:hover{background:rgba(127,29,29,.2)}" +
+  ".center{text-align:center}.qrbox{background:#fff;padding:16px;border-radius:18px;display:inline-block;margin:10px 0 16px}" +
+  ".muted{color:#64748b;font-size:12px;margin-top:20px}.hint{color:#94a3b8;font-size:13.5px;margin:4px 0 0}" +
+  ".back{color:#94a3b8;font-size:13px;text-decoration:none;display:inline-block;margin-bottom:8px}.back:hover{color:#e2e8f0}";
+
+function layout(title, inner, refreshMs) {
   return (
-    `<form method='POST' action='/relink${q}' style='display:inline'>` +
-    "<button style='padding:6px 12px;border:0;border-radius:8px;background:#dc2626;color:#fff;cursor:pointer'>" +
-    "Reset & QR baru</button></form>"
+    "<!doctype html><html lang='id'><head><meta charset='utf-8'>" +
+    "<meta name='viewport' content='width=device-width,initial-scale=1'>" +
+    `<title>${title}</title><style>${CSS}</style></head><body><div class='wrap'>` +
+    inner +
+    (refreshMs ? `<script>setTimeout(()=>location.reload(),${refreshMs})</script>` : "") +
+    "</div></body></html>"
+  );
+}
+
+function brand(subtitle) {
+  return (
+    `<div class='brand'><div class='logo'>${WA_ICON}</div>` +
+    `<div><h1>WhatsApp Sender</h1><div class='sub'>${subtitle}</div></div></div>`
+  );
+}
+
+function keyQ(key, extra) {
+  const parts = [];
+  if (extra) parts.push(extra);
+  if (key) parts.push(`key=${encodeURIComponent(key)}`);
+  return parts.length ? `?${parts.join("&")}` : "";
+}
+
+function relinkButton(id, key) {
+  return (
+    `<form method='POST' action='/relink${keyQ(key, `session=${encodeURIComponent(id)}`)}' style='display:inline'>` +
+    "<button class='btn btn-reset'>Reset &amp; QR baru</button></form>"
   );
 }
 
@@ -193,49 +242,73 @@ app.get("/qr", async (req, res) => {
 
   // Tanpa session -> halaman daftar semua nomor.
   if (!id) {
-    const rows = SESSION_IDS.map((sid) => {
-      const st = sessions.get(sid)?.connected ? "✅ terhubung" : "⚪ belum";
-      const q = `?session=${encodeURIComponent(sid)}${key ? `&key=${encodeURIComponent(key)}` : ""}`;
+    const cards = SESSION_IDS.map((sid) => {
+      const on = !!sessions.get(sid)?.connected;
+      const pill = on
+        ? "<span class='pill on'><span class='dot on'></span>Terhubung</span>"
+        : "<span class='pill off'><span class='dot off'></span>Belum</span>";
+      const scanUrl = `/qr${keyQ(key, `session=${encodeURIComponent(sid)}`)}`;
       return (
-        `<tr><td style='padding:8px 16px'><b>${sid}</b></td>` +
-        `<td style='padding:8px 16px'>${st}</td>` +
-        `<td style='padding:8px 16px'><a href='/qr${q}'>Scan</a></td>` +
-        `<td style='padding:8px 16px'>${relinkButton(sid, key)}</td></tr>`
+        "<div class='card'>" +
+        `<span class='name'>${sid}</span>${pill}<span class='spacer'></span>` +
+        `<a class='btn btn-scan' href='${scanUrl}'>${on ? "Lihat" : "Scan"}</a>` +
+        relinkButton(sid, key) +
+        "</div>"
       );
     }).join("");
+    const ok = connectedIds().length;
     return res.send(
-      "<html><body style='font-family:sans-serif;padding:24px'>" +
-        "<h2>Nomor pengirim WhatsApp</h2><table>" +
-        "<tr><th style='text-align:left;padding:8px 16px'>Sesi</th>" +
-        "<th style='text-align:left;padding:8px 16px'>Status</th><th></th><th></th></tr>" +
-        rows +
-        "</table><p style='color:#888'>Auto-refresh 8 dtk.</p>" +
-        "<script>setTimeout(()=>location.reload(),8000)</script></body></html>"
+      layout(
+        "WhatsApp Sender",
+        brand(`Gateway · ${ok}/${SESSION_IDS.length} nomor aktif`) +
+          cards +
+          "<p class='muted'>Auto-refresh tiap 8 detik.</p>",
+        8000
+      )
     );
   }
 
   if (!SESSION_IDS.includes(id)) return res.status(404).send("session tidak dikenal");
   const s = sessions.get(id);
-  const back = `<p><a href='/qr${key ? `?key=${encodeURIComponent(key)}` : ""}'>← semua nomor</a></p>`;
+  const back = `<a class='back' href='/qr${keyQ(key)}'>← Semua nomor</a>`;
+
   if (s?.connected) {
     return res.send(
-      `<html><body style='font-family:sans-serif;text-align:center;padding:24px'>${back}` +
-        `<h2>${id}: terhubung ✅</h2>${relinkButton(id, key)}</body></html>`
+      layout(
+        `${id} terhubung`,
+        back +
+          "<div class='center'>" +
+          `<div class='logo' style='width:54px;height:54px;border-radius:16px;margin:14px auto'>${WA_ICON}</div>` +
+          `<h2>${id} terhubung ✅</h2>` +
+          "<p class='hint'>Siap mengirim OTP. Klik di bawah untuk ganti nomor.</p>" +
+          `<div style='margin-top:16px'>${relinkButton(id, key)}</div></div>`
+      )
     );
   }
   if (!s?.qr) {
     return res.send(
-      `<html><body style='font-family:sans-serif;text-align:center;padding:24px'>${back}` +
-        `<h2>${id}: belum ada QR…</h2><p>Tunggu beberapa detik & refresh.</p>` +
-        "<script>setTimeout(()=>location.reload(),5000)</script></body></html>"
+      layout(
+        `${id} · menyiapkan QR`,
+        back +
+          `<div class='center'><h2>${id}: menyiapkan QR…</h2>` +
+          "<p class='hint'>Tunggu beberapa detik, halaman refresh sendiri.</p></div>",
+        4000
+      )
     );
   }
-  const dataUrl = await QRCode.toDataURL(s.qr, { width: 300 });
+  const dataUrl = await QRCode.toDataURL(s.qr, { width: 300, margin: 1 });
   res.send(
-    `<html><body style='font-family:sans-serif;text-align:center;padding:24px'>${back}` +
-      `<h2>Scan untuk ${id}</h2><p>WhatsApp → Perangkat Tertaut → Tautkan Perangkat</p>` +
-      `<img alt='qr' src='${dataUrl}'/>${relinkButton(id, key)}` +
-      "<script>setTimeout(()=>location.reload(),8000)</script></body></html>"
+    layout(
+      `Scan ${id}`,
+      back +
+        "<div class='center'>" +
+        `<h2>Tautkan nomor <span style='color:#25d366'>${id}</span></h2>` +
+        "<p class='hint'>WhatsApp → Perangkat Tertaut → Tautkan Perangkat</p>" +
+        `<div class='qrbox'><img alt='qr' width='260' height='260' src='${dataUrl}'/></div><br>` +
+        relinkButton(id, key) +
+        "</div>",
+      8000
+    )
   );
 });
 
@@ -263,11 +336,15 @@ app.all("/relink", async (req, res) => {
     await clearAuth(`${AUTH_DIR}/${id}`);
     await startSession(id);
   })().catch((e) => console.error(`[wa:${id}] relink:`, e?.message || e));
-  const q = `?session=${encodeURIComponent(id)}${req.query.key ? `&key=${encodeURIComponent(req.query.key)}` : ""}`;
+  const q = keyQ(req.query.key, `session=${encodeURIComponent(id)}`);
   res.send(
-    "<html><body style='font-family:sans-serif;text-align:center;padding:24px'>" +
-      `<h2>${id} di-reset 🔄</h2><p>QR baru sedang dibuat…</p>` +
-      `<script>setTimeout(()=>location.href='/qr${q}',3000)</script></body></html>`
+    layout(
+      `${id} di-reset`,
+      "<div class='center'>" +
+        `<div class='logo' style='width:54px;height:54px;border-radius:16px;margin:14px auto'>${WA_ICON}</div>` +
+        `<h2>${id} di-reset 🔄</h2><p class='hint'>QR baru sedang dibuat…</p>` +
+        `<script>setTimeout(()=>location.href='/qr${q}',3000)</script></div>`
+    )
   );
 });
 
