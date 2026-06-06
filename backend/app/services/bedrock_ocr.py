@@ -3,6 +3,7 @@ import io
 import json
 import logging
 import re
+import time
 from functools import lru_cache
 
 import boto3
@@ -150,6 +151,7 @@ def run_ocr(raw_image: bytes) -> OcrResult:
     image_bytes, img_format = preprocess_image(raw_image)
     client = _bedrock_client()
 
+    t0 = time.perf_counter()
     try:
         response = client.converse(
             modelId=settings.bedrock_model_id,
@@ -174,10 +176,37 @@ def run_ocr(raw_image: bytes) -> OcrResult:
         logger.error("Bedrock BotoCoreError: %s", exc)
         raise errors.bedrock_error("Gagal terhubung ke Bedrock.") from exc
 
+    latency_ms = int((time.perf_counter() - t0) * 1000)
+    usage = response.get("usage", {}) or {}
+    bmetrics = response.get("metrics", {}) or {}
+    meta = {
+        "model_id": settings.bedrock_model_id,
+        "input_tokens": usage.get("inputTokens"),
+        "output_tokens": usage.get("outputTokens"),
+        "total_tokens": usage.get("totalTokens"),
+        "latency_ms": latency_ms,
+        "bedrock_latency_ms": bmetrics.get("latencyMs"),
+    }
+
     try:
         text = response["output"]["message"]["content"][0]["text"]
     except (KeyError, IndexError, TypeError) as exc:
         logger.error("Bentuk respons Bedrock tak terduga: %s", exc)
-        raise errors.bedrock_error("Respons Bedrock tidak sesuai.") from exc
+        err = errors.bedrock_error("Respons Bedrock tidak sesuai.")
+        err.meta = meta  # type: ignore[attr-defined]
+        raise err from exc
 
-    return _parse_response(text)
+    # NOT_KTP / parse gagal tetap menghabiskan token -> bawa metrik ke error.
+    try:
+        result = _parse_response(text)
+    except errors.OcrError as exc:
+        exc.meta = meta  # type: ignore[attr-defined]
+        raise
+
+    result.model_id = meta["model_id"]
+    result.input_tokens = meta["input_tokens"]
+    result.output_tokens = meta["output_tokens"]
+    result.total_tokens = meta["total_tokens"]
+    result.latency_ms = meta["latency_ms"]
+    result.bedrock_latency_ms = meta["bedrock_latency_ms"]
+    return result

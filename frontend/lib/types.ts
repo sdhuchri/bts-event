@@ -49,3 +49,38 @@ export interface SaveRecordPayload {
   no_hp?: string | null;
   confidence?: Confidence | null;
 }
+
+// ── Tracing pemakaian LLM (Bedrock) ──────────────────────────────
+export interface LlmUsageItem {
+  id: string;
+  created_at: string;
+  operation: string;
+  model_id: string;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  total_tokens: number | null;
+  latency_ms: number | null;
+  bedrock_latency_ms: number | null;
+  success: boolean;
+  error_code: string | null;
+  confidence: Confidence | null;
+  image_bytes: number | null;
+  cost_usd: number | null;
+}
+
+export interface LlmUsageSummary {
+  total_calls: number;
+  success_calls: number;
+  error_calls: number;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  avg_latency_ms: number | null;
+  cost_usd: number | null;
+  currency: string;
+}
+
+export interface LlmUsageResponse {
+  summary: LlmUsageSummary;
+  items: LlmUsageItem[];
+}

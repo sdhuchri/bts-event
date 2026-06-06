@@ -2,12 +2,17 @@
 import base64
 import binascii
 import logging
+import time
 
-from fastapi import APIRouter, File, Request, UploadFile
+from anyio import to_thread
+from fastapi import APIRouter, Depends, File, Request, UploadFile
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import errors
 from app.core.config import get_settings
+from app.db.database import get_db
 from app.schemas.ktp import OcrBase64Request, OcrSuccessResponse
+from app.services import llm_usage
 from app.services.bedrock_ocr import run_ocr
 
 logger = logging.getLogger("bts.api")
@@ -39,6 +44,7 @@ def _guard_size(raw: bytes) -> None:
 async def ocr_ktp(
     request: Request,
     file: UploadFile | None = File(default=None),
+    db: AsyncSession = Depends(get_db),
 ) -> OcrSuccessResponse:
     """Terima gambar via multipart (`file`) ATAU JSON {image_base64}."""
     raw: bytes
@@ -63,9 +69,40 @@ async def ocr_ktp(
     _guard_size(raw)
 
     # run_ocr sinkron (boto3) -> jalankan di threadpool agar tidak blok event loop.
-    from anyio import to_thread
+    # Catat pemakaian LLM untuk tracing, baik saat sukses maupun gagal.
+    t0 = time.perf_counter()
+    try:
+        result = await to_thread.run_sync(run_ocr, raw)
+    except errors.OcrError as exc:
+        meta = getattr(exc, "meta", {}) or {}
+        await llm_usage.record_usage(
+            db,
+            operation="ocr_ktp",
+            model_id=meta.get("model_id") or settings.bedrock_model_id,
+            success=False,
+            error_code=exc.code,
+            input_tokens=meta.get("input_tokens"),
+            output_tokens=meta.get("output_tokens"),
+            total_tokens=meta.get("total_tokens"),
+            latency_ms=meta.get("latency_ms") or int((time.perf_counter() - t0) * 1000),
+            bedrock_latency_ms=meta.get("bedrock_latency_ms"),
+            image_bytes=len(raw),
+        )
+        raise
 
-    result = await to_thread.run_sync(run_ocr, raw)
+    await llm_usage.record_usage(
+        db,
+        operation="ocr_ktp",
+        model_id=result.model_id or settings.bedrock_model_id,
+        success=True,
+        input_tokens=result.input_tokens,
+        output_tokens=result.output_tokens,
+        total_tokens=result.total_tokens,
+        latency_ms=result.latency_ms,
+        bedrock_latency_ms=result.bedrock_latency_ms,
+        confidence=result.confidence,
+        image_bytes=len(raw),
+    )
 
     return OcrSuccessResponse(
         data=result.data,

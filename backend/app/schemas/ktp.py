@@ -51,11 +51,19 @@ class KtpData(BaseModel):
 
 
 class OcrResult(BaseModel):
-    """Hasil internal dari service OCR."""
+    """Hasil internal dari service OCR (+ metrik LLM untuk tracing)."""
 
     data: KtpData
     confidence: Confidence = "low"
     raw_text: str = ""
+
+    # Metrik panggilan Bedrock (tidak diekspos ke response OCR; dipakai logging).
+    model_id: str | None = None
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    total_tokens: int | None = None
+    latency_ms: int | None = None
+    bedrock_latency_ms: int | None = None
 
 
 class OcrSuccessResponse(BaseModel):

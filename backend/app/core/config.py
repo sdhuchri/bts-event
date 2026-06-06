@@ -21,6 +21,14 @@ class Settings(BaseSettings):
     max_file_size_mb: int = 5
     max_image_dimension: int = 1600
 
+    # Harga LLM (untuk kolom biaya di tabel tracing). Isi sesuai harga model
+    # Bedrock yang dipakai, dalam USD per 1.000 token. 0 = biaya tidak dihitung
+    # (kolom biaya tampil "—"). Diterapkan saat baca, jadi ubah harga →
+    # biaya historis ikut terhitung ulang.
+    llm_price_input_per_1k: float = 0.0
+    llm_price_output_per_1k: float = 0.0
+    llm_currency: str = "USD"
+
     # Database
     database_url: str = (
         "postgresql+asyncpg://nalarx:nalarx_secret@host.docker.internal:5432/bts_event"

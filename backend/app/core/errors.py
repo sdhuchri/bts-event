@@ -12,6 +12,8 @@ class OcrError(Exception):
         self.code = code
         self.message = message
         self.status_code = status_code
+        # Metrik LLM opsional (diisi service OCR untuk tracing meski gagal).
+        self.meta: dict = {}
         super().__init__(message)
 
 

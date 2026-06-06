@@ -1,6 +1,7 @@
 import type {
   ApiErrorBody,
   KtpRecord,
+  LlmUsageResponse,
   OcrSuccess,
   SaveRecordPayload,
 } from "./types";
@@ -87,4 +88,13 @@ export async function deleteRecord(id: string): Promise<void> {
     method: "DELETE",
   });
   if (!res.ok && res.status !== 204) await parseError(res);
+}
+
+/** Tracing pemakaian LLM: ringkasan + daftar panggilan terbaru. */
+export async function listLlmUsage(limit = 100): Promise<LlmUsageResponse> {
+  const res = await fetch(`${BASE_URL}/api/v1/llm/usage?limit=${limit}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) await parseError(res);
+  return (await res.json()) as LlmUsageResponse;
 }

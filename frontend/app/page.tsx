@@ -93,12 +93,20 @@ export default function HomePage() {
           <h1 className="text-xl font-bold tracking-tight">OCR KTP</h1>
           <p className="text-sm text-slate-500">Event BTS · prototype</p>
         </div>
-        <Link
-          href="/records"
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700"
-        >
-          Tersimpan
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/usage"
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700"
+          >
+            LLM
+          </Link>
+          <Link
+            href="/records"
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700"
+          >
+            Tersimpan
+          </Link>
+        </div>
       </header>
 
       {stage === "capture" && (

@@ -2,7 +2,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, String, Text, func
+from sqlalchemy import Boolean, DateTime, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.database import Base
@@ -62,3 +62,31 @@ class OtpCode(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
+
+class LlmUsage(Base):
+    """Satu baris per panggilan LLM (Bedrock) — untuk tracing token, latency,
+    biaya, dan status. Token disimpan apa adanya; biaya dihitung saat dibaca."""
+
+    __tablename__ = "llm_usage"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
+
+    operation: Mapped[str] = mapped_column(String(48), index=True)  # mis. "ocr_ktp"
+    model_id: Mapped[str] = mapped_column(String(128))
+
+    input_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    output_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    total_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # latency_ms = end-to-end yang kita ukur; bedrock_latency_ms = laporan Bedrock.
+    latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    bedrock_latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    success: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    error_code: Mapped[str | None] = mapped_column(String(48), nullable=True)
+    confidence: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    image_bytes: Mapped[int | None] = mapped_column(Integer, nullable=True)
