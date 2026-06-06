@@ -1,44 +1,44 @@
-# Arsitektur — OCR KTP + OTP WhatsApp (Event BTS)
+# Architecture — KTP OCR + WhatsApp OTP (Event BTS)
 
-Ringkasan komponen, alur, dan urutan proses. Diagram pakai **Mermaid** (ter-render
-otomatis di GitHub).
+Overview of components, flow, and processing order. Diagrams use **Mermaid**
+(rendered automatically on GitHub).
 
-> Dokumen terkait: [API publik untuk mobile](public-api.md) ·
-> [Alternatif provider WhatsApp](whatsapp-alternatives.md)
+> Related docs: [Public API for mobile](public-api.md) ·
+> [WhatsApp provider alternatives](whatsapp-alternatives.md)
 
 ---
 
-## Komponen
+## Components
 
-| Komponen | Teknologi | Peran |
+| Component | Tech | Role |
 |---|---|---|
-| **frontend** | Next.js 16 | App panitia: kamera/scan KTP + form (NIK, Nama, No HP), kirim OTP |
-| **backend** | FastAPI | Otak sistem: OCR, logika OTP, simpan data, **+ API publik `/api/v1/ext`** |
-| **AWS Bedrock** | Vision LLM | OCR: foto KTP → JSON 17 field |
-| **wa service** | Node + Baileys | Pengirim pesan WhatsApp (companion device) |
-| **wa nasabah** | WhatsApp | WhatsApp milik nasabah yang menerima OTP |
-| **db** | PostgreSQL | `ktp_records` (data peserta) + `otp_codes` (kode OTP) |
-| **bsya (mobile apps)** | Native mobile | Konsumer eksternal: verifikasi & kirim ulang OTP via API publik |
+| **frontend** | Next.js 16 | Staff app: camera/scan KTP + form (NIK, Name, Phone), send OTP |
+| **backend** | FastAPI | System core: OCR, OTP logic, persistence, **+ public API `/api/v1/ext`** |
+| **AWS Bedrock** | Vision LLM | OCR: KTP photo → structured JSON (17 fields) |
+| **wa service** | Node + Baileys | WhatsApp message sender (companion device) |
+| **customer WhatsApp** | WhatsApp | The customer's WhatsApp that receives the OTP |
+| **db** | PostgreSQL | `ktp_records` (participant data) + `otp_codes` (OTP codes) |
+| **bsya (mobile app)** | Native mobile | External consumer: verify & resend OTP via the public API |
 
 ---
 
-## Diagram komponen
+## Component diagram
 
 ```mermaid
 flowchart LR
-    FE["frontend<br/>(panitia)"]
-    BE["backend — FastAPI<br/>+ API publik /api/v1/ext"]
+    FE["frontend<br/>(staff)"]
+    BE["backend — FastAPI<br/>+ public API /api/v1/ext"]
     AI["AWS Bedrock<br/>AI Model"]
     WA["wa service<br/>(Baileys)"]
-    WN["wa nasabah<br/>(WhatsApp)"]
+    WN["customer WhatsApp"]
     DB[("db<br/>bts_event")]
-    MB["bsya<br/>(mobile apps)"]
+    MB["bsya<br/>(mobile app)"]
 
-    FE -->|"1. foto KTP"| BE
-    BE -->|"4. hasil OCR → form"| FE
+    FE -->|"1. KTP photo"| BE
+    BE -->|"4. OCR result → form"| FE
     BE <-->|"2–3. OCR (vision)"| AI
-    BE -->|"6/11. simpan & cek"| DB
-    BE -->|"7. minta kirim OTP"| WA
+    BE -->|"6/11. store & check"| DB
+    BE -->|"7. send OTP"| WA
     WA -->|"8. OTP"| WN
     MB <-->|"10/13. verify + resend<br/>X-API-Key"| BE
 
@@ -46,74 +46,74 @@ flowchart LR
     class AI,WA,WN,MB ext;
 ```
 
-> **Penting:** `bsya` (mobile) **tidak mengakses `db` langsung**. Mobile memanggil
-> **API publik di backend** (`/api/v1/ext/*` + `X-API-Key`), lalu **backend** yang
-> query `db`. Jadi alurnya `bsya → backend (API publik) → db` — demi keamanan
-> (API key, validasi, rate-limit).
+> **Important:** `bsya` (mobile) **does not access `db` directly**. The mobile app
+> calls the **public API on the backend** (`/api/v1/ext/*` + `X-API-Key`), and the
+> **backend** queries `db`. So the path is `bsya → backend (public API) → db` — for
+> security (API key, validation, rate limiting).
 
 ---
 
-## Urutan proses (sequence)
+## Process order (sequence)
 
 ```mermaid
 sequenceDiagram
-    actor P as Panitia
+    actor P as Staff
     participant FE as frontend
     participant BE as backend
     participant AI as AWS Bedrock
     participant DB as db
     participant WA as wa service
-    participant WN as wa nasabah
-    actor N as Nasabah
+    participant WN as customer WhatsApp
+    actor N as Customer
     participant MB as bsya (mobile)
 
-    Note over P,WN: FASE 1 — Daftar peserta + kirim OTP (panitia)
+    Note over P,WN: PHASE 1 — Register participant + send OTP (staff)
     P->>FE: scan / upload KTP
-    FE->>BE: 1. POST foto KTP
-    BE->>AI: 2. kirim gambar (OCR)
-    AI-->>BE: 3. hasil JSON 17 field
-    BE-->>FE: 4. data OCR → form
-    P->>FE: koreksi NIK/Nama + isi No HP + "Kirim OTP"
-    FE->>BE: 5. POST kirim OTP + simpan
-    BE->>DB: 6. simpan record + simpan OTP
-    BE->>WA: 7. minta kirim OTP
-    WA->>WN: 8. kirim OTP (WhatsApp)
-    WN-->>N: terima kode OTP
+    FE->>BE: 1. POST KTP photo
+    BE->>AI: 2. send image (OCR)
+    AI-->>BE: 3. JSON result (17 fields)
+    BE-->>FE: 4. OCR data → form
+    P->>FE: correct NIK/Name + enter Phone + "Send OTP"
+    FE->>BE: 5. POST send OTP + save
+    BE->>DB: 6. save record + save OTP
+    BE->>WA: 7. request send OTP
+    WA->>WN: 8. send OTP (WhatsApp)
+    WN-->>N: receives OTP code
 
-    Note over N,DB: FASE 2 — Verifikasi OTP (nasabah, via bsya)
-    N->>MB: 9. input kode OTP
+    Note over N,DB: PHASE 2 — Verify OTP (customer, via bsya)
+    N->>MB: 9. enter OTP code
     MB->>BE: 10. verify OTP (/api/v1/ext + X-API-Key)
-    BE->>DB: 11. cek kode (hash / expiry / attempts)
-    DB-->>BE: 12. valid / tidak
+    BE->>DB: 11. check code (hash / expiry / attempts)
+    DB-->>BE: 12. valid / invalid
     BE-->>MB: 13. verified ✅
 ```
 
-### Urutan ringkas
-**Fase 1 (panitia):** `frontend → backend → Bedrock → (form) → backend → db (simpan) → wa service → WhatsApp nasabah`
+### Short version
+**Phase 1 (staff):** `frontend → backend → Bedrock → (form) → backend → db (save) → wa service → customer WhatsApp`
 
-**Fase 2 (nasabah/bsya):** `bsya → backend (API publik) → db (cek) → verified ✅`
+**Phase 2 (customer/bsya):** `bsya → backend (public API) → db (check) → verified ✅`
 
 ---
 
-## Keamanan antar-jalur
+## Security per path
 
-| Jalur | Proteksi |
+| Path | Protection |
 |---|---|
-| frontend → backend | CORS allowlist (origin frontend) |
-| backend → wa service | `x-api-key` internal (`WA_GATEWAY_API_KEY`) + private network |
+| frontend → backend | CORS allowlist (frontend origin) |
+| backend → wa service | internal `x-api-key` (`WA_GATEWAY_API_KEY`) + private network |
 | **bsya → backend** (`/ext`) | **`X-API-Key`** (`EXT_API_KEYS`) + HTTPS |
-| OTP | kode di-hash, expiry 5 mnt, cooldown 60 dtk, maks 5 percobaan |
+| OTP | code hashed, 5-min expiry, 60s resend cooldown, max 5 attempts |
 
 ---
 
 ## Deployment (Railway)
 
-| Service | Root dir | Catatan |
+| Service | Root dir | Notes |
 |---|---|---|
 | frontend | `frontend` | `NEXT_PUBLIC_API_BASE_URL` → backend |
 | backend | `backend` | env: AWS, `DATABASE_URL`, CORS, `WA_*`, `EXT_API_KEYS` |
-| wa service | `wa-gateway` | **Volume `/app/auth`** (sesi WA), scan QR di `/qr` |
+| wa service | `wa-gateway` | **Volume `/app/auth`** (WA session), scan QR at `/qr` |
 | Postgres | — | `${{Postgres.DATABASE_URL}}` |
 
-backend ↔ wa service lewat **private networking** (`*.railway.internal:3000`);
-publik (frontend & bsya) lewat **HTTPS**.
+backend ↔ wa service over **private networking** (`*.railway.internal:3000`);
+public traffic (frontend & bsya) over **HTTPS**.
