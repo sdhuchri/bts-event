@@ -180,9 +180,11 @@ simpan record bila nomor belum punya OTP terverifikasi.
 - Tambah service **GitHub Repo**, Root Directory = `wa-gateway`.
 - **Wajib pasang Volume** di mount path `/app/auth` (Settings → Volumes) agar sesi
   WhatsApp persisten — tanpa ini, QR harus di-scan ulang tiap redeploy.
-- Variables: `WA_API_KEY=<secret>`, `WA_AUTH_DIR=/app/auth`.
-- Backend Variables: `WA_GATEWAY_URL=http://${{wa-gateway.RAILWAY_PRIVATE_DOMAIN}}:8080`
-  (sesuaikan port internal) & `WA_GATEWAY_API_KEY=<secret sama>`.
-- Scan QR di Railway: generate domain sementara untuk `wa-gateway`, buka
-  `/qr?key=<WA_API_KEY>`, scan, lalu domain boleh ditutup (private networking saja).
+- Variables wa-gateway: `WA_API_KEY=<secret>`, `WA_AUTH_DIR=/app/auth`, `PORT=3000`
+  (port tetap agar private networking deterministik).
+- Backend Variables: `WA_GATEWAY_URL=http://${{wa-gateway.RAILWAY_PRIVATE_DOMAIN}}:3000`
+  & `WA_GATEWAY_API_KEY=<secret sama dgn WA_API_KEY>`, lalu redeploy backend.
+- Scan QR: generate domain (publik) sementara untuk `wa-gateway`, buka
+  `https://<domain>/qr?key=<WA_API_KEY>`, scan. Setelah connect, domain publik
+  boleh dihapus (backend tetap akses via private networking).
 
