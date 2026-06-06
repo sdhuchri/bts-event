@@ -26,6 +26,10 @@ class Settings(BaseSettings):
         "postgresql+asyncpg://nalarx:nalarx_secret@host.docker.internal:5432/bts_event"
     )
 
+    # API publik untuk konsumer eksternal (native mobile app) — X-API-Key.
+    # Bisa lebih dari satu key (dipisah koma) untuk rotasi / multi-app.
+    ext_api_keys: str = ""
+
     # WhatsApp gateway (Baileys) + OTP
     wa_gateway_url: str = "http://wa-gateway:3000"
     wa_gateway_api_key: str = ""
@@ -60,6 +64,10 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def ext_api_keys_list(self) -> list[str]:
+        return [k.strip() for k in self.ext_api_keys.split(",") if k.strip()]
 
     @property
     def max_file_size_bytes(self) -> int:

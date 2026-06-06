@@ -77,6 +77,9 @@ docker compose down
 
 Kode error: `INVALID_FILE`, `FILE_TOO_LARGE`, `OCR_FAILED`, `BEDROCK_ERROR`, `RATE_LIMITED`.
 
+> 📱 **API publik untuk native mobile app** (verifikasi & kirim ulang OTP, proteksi
+> `X-API-Key`): lihat [docs/public-api.md](docs/public-api.md).
+
 ## Catatan privasi
 
 KTP = data pribadi sensitif. Untuk prototype event ini hasil OCR **disimpan** ke DB
