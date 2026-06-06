@@ -27,6 +27,9 @@ npm-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# ── WhatsApp (Baileys) session ─────────────────────────────────────
+wa-gateway/auth/
+
 # ── Editor / OS ────────────────────────────────────────────────────
 .DS_Store
 .vscode/

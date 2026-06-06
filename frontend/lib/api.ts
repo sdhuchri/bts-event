@@ -53,6 +53,29 @@ export async function saveRecord(data: SaveRecordPayload): Promise<KtpRecord> {
   return (await res.json()) as KtpRecord;
 }
 
+/** Minta OTP dikirim ke WhatsApp nomor tsb. */
+export async function requestOtp(
+  no_hp: string
+): Promise<{ expires_in: number }> {
+  const res = await fetch(`${BASE_URL}/api/v1/otp/request`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ no_hp }),
+  });
+  if (!res.ok) await parseError(res);
+  return (await res.json()) as { expires_in: number };
+}
+
+/** Verifikasi kode OTP. Throw ApiError bila salah/kedaluwarsa. */
+export async function verifyOtp(no_hp: string, code: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/api/v1/otp/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ no_hp, code }),
+  });
+  if (!res.ok) await parseError(res);
+}
+
 export async function listRecords(): Promise<KtpRecord[]> {
   const res = await fetch(`${BASE_URL}/api/v1/records`, { cache: "no-store" });
   if (!res.ok) await parseError(res);

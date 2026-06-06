@@ -150,3 +150,39 @@ di sub-foldernya (cukup set **Root Directory** di Railway).
 > **Urutan deploy** mengatasi saling-ketergantungan: backend dulu (dapat URL) →
 > frontend pakai URL itu → set `CORS_ORIGINS` backend ke URL frontend → redeploy.
 
+## Verifikasi OTP WhatsApp (Baileys)
+
+Sebelum menyimpan, nomor HP diverifikasi via **OTP yang dikirim ke WhatsApp**.
+Service `wa-gateway` (Node + [Baileys](https://github.com/WhiskeySockets/Baileys))
+memegang koneksi WhatsApp; FastAPI yang generate/simpan/verifikasi OTP.
+
+```
+Frontend ─► FastAPI (OTP: generate/verif, Postgres) ─► wa-gateway (Baileys) ─► WhatsApp
+```
+
+> ⚠️ **Baileys = WhatsApp Web tidak resmi** → melanggar ToS, **risiko nomor diban**.
+> Hanya untuk DEMO/prototype, jangan untuk produksi/skala besar.
+
+### Tautkan WhatsApp (scan QR) — lokal
+1. `docker compose up --build`
+2. Buka **http://localhost:8090/qr?key=bts-wa-secret-key**
+3. Di HP: WhatsApp → **Perangkat Tertaut** → **Tautkan Perangkat** → scan QR.
+4. Setelah `connected`, OTP siap dikirim. Sesi disimpan di volume `wa_auth`
+   (tak perlu scan ulang tiap restart).
+
+Alur user: isi No HP → **Kirim OTP** → terima kode di WA → **Verifikasi** → **Simpan**.
+
+Pengaman: kadaluarsa `OTP_EXPIRY_MINUTES` (default 5), maks `OTP_MAX_ATTEMPTS`
+percobaan, cooldown kirim ulang `OTP_RESEND_COOLDOWN_SECONDS`. Backend menolak
+simpan record bila nomor belum punya OTP terverifikasi.
+
+### Catatan deploy Railway (service ke-4)
+- Tambah service **GitHub Repo**, Root Directory = `wa-gateway`.
+- **Wajib pasang Volume** di mount path `/app/auth` (Settings → Volumes) agar sesi
+  WhatsApp persisten — tanpa ini, QR harus di-scan ulang tiap redeploy.
+- Variables: `WA_API_KEY=<secret>`, `WA_AUTH_DIR=/app/auth`.
+- Backend Variables: `WA_GATEWAY_URL=http://${{wa-gateway.RAILWAY_PRIVATE_DOMAIN}}:8080`
+  (sesuaikan port internal) & `WA_GATEWAY_API_KEY=<secret sama>`.
+- Scan QR di Railway: generate domain sementara untuk `wa-gateway`, buka
+  `/qr?key=<WA_API_KEY>`, scan, lalu domain boleh ditutup (private networking saja).
+

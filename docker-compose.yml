@@ -16,7 +16,24 @@ services:
     volumes:
       # Hot reload kode backend tanpa rebuild.
       - ./backend/app:/app/app
+    depends_on:
+      - wa-gateway
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  wa-gateway:
+    build: ./wa-gateway
+    container_name: bts-wa-gateway
+    restart: unless-stopped
+    environment:
+      - PORT=3000
+      - WA_API_KEY=bts-wa-secret-key
+      - WA_AUTH_DIR=/app/auth
+    ports:
+      # Buka http://localhost:8090/qr?key=bts-wa-secret-key untuk scan WhatsApp.
+      - "8090:3000"
+    volumes:
+      # Persist sesi WhatsApp (Baileys) agar tak perlu scan QR tiap restart.
+      - wa_auth:/app/auth
 
   frontend:
     build: ./frontend
@@ -35,3 +52,6 @@ services:
       - ./frontend:/app
       - /app/node_modules
       - /app/.next
+
+volumes:
+  wa_auth:

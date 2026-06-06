@@ -26,6 +26,16 @@ class Settings(BaseSettings):
         "postgresql+asyncpg://nalarx:nalarx_secret@host.docker.internal:5432/bts_event"
     )
 
+    # WhatsApp gateway (Baileys) + OTP
+    wa_gateway_url: str = "http://wa-gateway:3000"
+    wa_gateway_api_key: str = ""
+    otp_length: int = 6
+    otp_expiry_minutes: int = 5
+    otp_max_attempts: int = 5
+    otp_resend_cooldown_seconds: int = 60
+    # Window (menit) verified-OTP masih valid untuk menyimpan record.
+    otp_verify_window_minutes: int = 30
+
     # CORS
     cors_origins: str = "http://localhost:3002,http://127.0.0.1:3002"
 

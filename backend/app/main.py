@@ -8,7 +8,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import ocr, records
+from app.api import ocr, otp, records
 from app.core.config import get_settings
 from app.core.errors import OcrError
 from app.db.database import init_db
@@ -74,4 +74,5 @@ async def health() -> dict:
 
 
 app.include_router(ocr.router)
+app.include_router(otp.router)
 app.include_router(records.router)
