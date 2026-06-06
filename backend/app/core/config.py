@@ -21,12 +21,13 @@ class Settings(BaseSettings):
     max_file_size_mb: int = 5
     max_image_dimension: int = 1600
 
-    # Harga LLM (untuk kolom biaya di tabel tracing). Isi sesuai harga model
-    # Bedrock yang dipakai, dalam USD per 1.000 token. 0 = biaya tidak dihitung
-    # (kolom biaya tampil "—"). Diterapkan saat baca, jadi ubah harga →
-    # biaya historis ikut terhitung ulang.
-    llm_price_input_per_1k: float = 0.0
-    llm_price_output_per_1k: float = 0.0
+    # Harga LLM (untuk kolom biaya di tabel tracing), USD per 1.000 token.
+    # Default = Kimi K2.5 di Bedrock region ap-southeast-3 (Jakarta) per Jun 2026:
+    # $0.72 / 1M input, $3.60 / 1M output. Override via env bila harga/region
+    # berubah; set 0 untuk menonaktifkan (kolom biaya tampil "—"). Diterapkan
+    # saat baca, jadi ubah harga -> biaya historis ikut terhitung ulang.
+    llm_price_input_per_1k: float = 0.00072
+    llm_price_output_per_1k: float = 0.0036
     llm_currency: str = "USD"
 
     # Database
